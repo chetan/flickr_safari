@@ -34,14 +34,16 @@ module FlickrSafari
             end
 
             url = "http://www.flickr.com/explore/interesting/#{ytd}/page#{page}/"
-            p url
-
             html = fetchurl(url)
 
             photo_scraper = Scraper.define do
-                process "a", :title => "@title"
-                process "a", :href => "@href"
-                result :title, :href
+                process "a",   :title     => "@title"
+                process "a",   :href      => "@href"
+                process "img", :thumb_url => "@src"
+                process "img", :thumb_w   => "@width"
+                process "img", :thumb_h   => "@height"
+
+                result :title, :href, :thumb_url, :thumb_w, :thumb_h
             end
 
             photos_scraper = Scraper.define do
@@ -62,17 +64,28 @@ module FlickrSafari
     end # self
 
     class Photo
-        attr_accessor :title, :href, :user, :photo_id
+        attr_reader :title, :href, :user, :photo_id, :thumb_url, :thumb_w, :thumb_h
         def initialize(struct = nil)
             return if struct.nil?
 
-            self.title = struct.title
-            self.href = struct.href
+            @title = struct.title
+            @href = struct.href
+            @thumb_url = struct.thumb_url
+            @thumb_w = struct.thumb_w
+            @thumb_h = struct.thumb_h
 
             # href = /photos/libbytelford/5722999886/
-            self.href =~ %r{/photos/(.*)/(\d+)/}
-            self.user = $1
-            self.photo_id = $2
+            @href =~ %r{/photos/(.*)/(\d+)/}
+            @user = $1
+            @photo_id = $2
+        end
+
+        def photo_url
+            "http://www.flickr.com#{href}"
+        end
+
+        def user_url
+            "http://www.flickr.com/photos/#{user}/"
         end
     end
 
