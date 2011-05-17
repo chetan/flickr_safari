@@ -37,18 +37,20 @@ module FlickrSafari
             html = fetchurl(url)
 
             photo_scraper = Scraper.define do
-                process "a",   :title     => "@title"
-                process "a",   :href      => "@href"
-                process "img", :thumb_url => "@src"
-                process "img", :thumb_w   => "@width"
-                process "img", :thumb_h   => "@height"
+                process ".photo_container a",     :title     => "@title"
+                process ".photo_container a",     :href      => "@href"
+                process ".photo_container a img", :thumb_url => "@src"
+                process ".photo_container a img", :thumb_w   => "@width"
+                process ".photo_container a img", :thumb_h   => "@height"
 
-                result :title, :href, :thumb_url, :thumb_w, :thumb_h
+                process "td.PicDesc p.PicFrom b a", :user_name => :text
+
+                result :title, :href, :thumb_url, :thumb_w, :thumb_h, :user_name
             end
 
             photos_scraper = Scraper.define do
                 array :photos
-                process ".photo_container a", :photos => photo_scraper
+                process "table.DayView tr", :photos => photo_scraper
                 result :photos
             end
 
@@ -64,17 +66,20 @@ module FlickrSafari
     end # self
 
     class Photo
-        attr_reader :title, :href, :user, :photo_id, :thumb_url, :thumb_w, :thumb_h
+
+        attr_reader :title, :href, :user_id, :user_name, :photo_id, :thumb_url, :thumb_w, :thumb_h
+
         def initialize(struct = nil)
             return if struct.nil?
 
             @title = struct.title
             @href = struct.href
+            @user_name = struct.user_name
             @thumb_url = struct.thumb_url
             @thumb_w = struct.thumb_w
             @thumb_h = struct.thumb_h
 
-            # href = /photos/libbytelford/5722999886/
+            # href = "/photos/libbytelford/5722999886/"
             @href =~ %r{/photos/(.*)/(\d+)/}
             @user = $1
             @photo_id = $2
